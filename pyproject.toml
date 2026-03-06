@@ -1,0 +1,31 @@
+[[tool.pydoc-markdown.loaders]]
+type = "python"
+search_path = [ "./src" ]
+packages = ["pcf85263"]
+
+[[tool.pydoc-markdown.processors]]
+type = "filter"
+skip_empty_modules = true
+do_not_filter_modules = false
+expression = "not (name.startswith('_') and not name.endswith('_')) and default()"
+
+[[tool.pydoc-markdown.processors]]
+type = "google"
+
+[tool.pydoc-markdown.renderer]
+type = "markdown"
+filename = "docs/api.md"
+code_headers = true
+descriptive_class_title = "class "
+descriptive_module_title = true
+add_module_prefix = false
+render_toc = true
+render_toc_title = "Summary"
+render_module_header = false
+
+[tool.pydoc-markdown.renderer.header_level_by_type]
+Module = 1
+Class = 2
+Method = 3
+Function = 3
+Variable = 3

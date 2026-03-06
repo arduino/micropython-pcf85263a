@@ -1,0 +1,9 @@
+{
+  "urls": [
+    [
+      "github:arduino/micropython-pcf85263at/src/pcf85263.py",
+      "pcf85263.py"
+    ]
+  ],
+  "version": "0.1.0"
+}
