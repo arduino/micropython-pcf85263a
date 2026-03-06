@@ -74,7 +74,15 @@ class PCF85263:
         # PCF85263_FUNCTION register
         # mode 0: RTC mode, mode 1: Stopwatch mode
         mask = self._read_byte(PCF85263_FUNCTION)
-        mask &= 0xEF  # Clear bit 4
+        mask &= 0xEF  # Clear bit 4 (RTCM)
+        mask |= 0x80  # Set bit 7 (100TH) to enable hundredths
+        self._write_byte(PCF85263_FUNCTION, mask)
+
+    def _set_stopwatch_mode(self):
+        # PCF85263_FUNCTION register
+        mask = self._read_byte(PCF85263_FUNCTION)
+        mask |= 0x10  # Set bit 4 (RTCM)
+        mask |= 0x80  # Set bit 7 (100TH) to enable hundredths
         self._write_byte(PCF85263_FUNCTION, mask)
         
     def stop(self):
@@ -84,6 +92,11 @@ class PCF85263:
     def start(self):
         """Starts the entire RTC clock. Note: This is not just for the stopwatch."""
         self._write_byte(PCF85263_STOP_ENABLE, 0)
+        
+    @property
+    def stopped(self):
+        """Returns True if the RTC clock is stopped, False otherwise."""
+        return self._read_byte(PCF85263_STOP_ENABLE) == 1
         
     @property
     def datetime(self):
@@ -135,3 +148,70 @@ class PCF85263:
         self.stop()
         self._write_registers(PCF85263_SECONDS, buffer)
         self.start()
+
+    @property
+    def stopwatch_time(self):
+        """Get or set the current stopwatch time.
+        
+        When reading, returns a tuple: (hours, minutes, seconds, hundredths)
+        When setting, expects a tuple: (hours, minutes, seconds, hundredths)
+        
+        Hours is 0-999999.
+        Minutes, Seconds is 0-59.
+        Hundredths is 0-99.
+        """
+        # Read 6 registers starting from 100TH SECONDS (0x00)
+        data = self._read_registers(PCF85263_SECONDS_100TH, 6)
+        
+        hundredths = self._bcd2dec(data[0] & 0xFF)
+        seconds = self._bcd2dec(data[1] & 0x7F)
+        minutes = self._bcd2dec(data[2] & 0x7F)
+        hours_L = self._bcd2dec(data[3] & 0xFF)
+        hours_M = self._bcd2dec(data[4] & 0xFF)
+        hours_H = self._bcd2dec(data[5] & 0xFF)
+        
+        hours = hours_H * 10000 + hours_M * 100 + hours_L
+        return (hours, minutes, seconds, hundredths)
+
+    @stopwatch_time.setter
+    def stopwatch_time(self, time_tuple):
+        hours, minutes, seconds, hundredths = time_tuple
+        
+        if not (0 <= hundredths <= 99): raise ValueError("Hundredths out of range [0-99]")
+        if not (0 <= seconds <= 59): raise ValueError("Seconds out of range [0-59]")
+        if not (0 <= minutes <= 59): raise ValueError("Minutes out of range [0-59]")
+        if not (0 <= hours <= 999999): raise ValueError("Hours out of range [0-999999]")
+        
+        hours_H = hours // 10000
+        hours_M = (hours % 10000) // 100
+        hours_L = hours % 100
+        
+        buffer = bytearray(6)
+        buffer[0] = self._dec2bcd(hundredths)
+        buffer[1] = self._dec2bcd(seconds)
+        buffer[2] = self._dec2bcd(minutes)
+        buffer[3] = self._dec2bcd(hours_L)
+        buffer[4] = self._dec2bcd(hours_M)
+        buffer[5] = self._dec2bcd(hours_H)
+        
+        self.stop()
+        self._write_registers(PCF85263_SECONDS_100TH, buffer)
+
+    def stopwatch_reset(self):
+        """Resets the stopwatch to 0 and stops it."""
+        self.stopwatch_time = (0, 0, 0, 0)
+
+    @property
+    def stopwatch_mode(self):
+        """Get or set the RTC mode to Real-Time Clock (False) or Stopwatch (True)."""
+        mask = self._read_byte(PCF85263_FUNCTION)
+        return bool(mask & 0x10)
+
+    @stopwatch_mode.setter
+    def stopwatch_mode(self, is_stopwatch):
+        if is_stopwatch:
+            self.stop()
+            self._set_stopwatch_mode()
+        else:
+            self._set_rtc_mode()
+            self.start()
