@@ -19,7 +19,12 @@ PCF85263_WEEKDAYS = const(0x05)
 PCF85263_MONTHS = const(0x06)
 PCF85263_YEARS = const(0x07)
 
+PCF85263_ALARM1_SECONDS = const(0x08)
+PCF85263_ALARM2_MINUTES = const(0x0D)
+PCF85263_ALARM_ENABLES = const(0x10)
+
 PCF85263_FUNCTION = const(0x28)
+PCF85263_FLAGS = const(0x2B)
 PCF85263_STOP_ENABLE = const(0x2E)
 
 class PCF85263:
@@ -215,3 +220,125 @@ class PCF85263:
         else:
             self._set_rtc_mode()
             self.start()
+
+    def set_alarm1(self, seconds=None, minutes=None, hours=None, days=None, months=None):
+        """Sets Alarm 1. Passing None acts as a wildcard (ignores that field)."""
+        buffer = bytearray(5)
+        enables = self._read_byte(PCF85263_ALARM_ENABLES)
+        enables &= 0xE0 # Clear all A1 bits (0-4)
+        
+        if seconds is not None:
+            if not (0 <= seconds <= 59): raise ValueError("Seconds out of range [0-59]")
+            buffer[0] = self._dec2bcd(seconds)
+            enables |= 0x01
+        if minutes is not None:
+            if not (0 <= minutes <= 59): raise ValueError("Minutes out of range [0-59]")
+            buffer[1] = self._dec2bcd(minutes)
+            enables |= 0x02
+        if hours is not None:
+            if not (0 <= hours <= 23): raise ValueError("Hours out of range [0-23]")
+            buffer[2] = self._dec2bcd(hours)
+            enables |= 0x04
+        if days is not None:
+            if not (1 <= days <= 31): raise ValueError("Days out of range [1-31]")
+            buffer[3] = self._dec2bcd(days)
+            enables |= 0x08
+        if months is not None:
+            if not (1 <= months <= 12): raise ValueError("Months out of range [1-12]")
+            buffer[4] = self._dec2bcd(months)
+            enables |= 0x10
+            
+        self._write_registers(PCF85263_ALARM1_SECONDS, buffer)
+        self._write_byte(PCF85263_ALARM_ENABLES, enables)
+        
+    @property
+    def alarm1(self):
+        """Returns the current Alarm 1 settings as a tuple: (seconds, minutes, hours, days, months).
+        Fields that are disabled (wildcards) return None."""
+        enables = self._read_byte(PCF85263_ALARM_ENABLES)
+        data = self._read_registers(PCF85263_ALARM1_SECONDS, 5)
+        
+        seconds = self._bcd2dec(data[0] & 0x7F) if (enables & 0x01) else None
+        minutes = self._bcd2dec(data[1] & 0x7F) if (enables & 0x02) else None
+        hours = self._bcd2dec(data[2] & 0x3F) if (enables & 0x04) else None
+        days = self._bcd2dec(data[3] & 0x3F) if (enables & 0x08) else None
+        months = self._bcd2dec(data[4] & 0x1F) if (enables & 0x10) else None
+        
+        return (seconds, minutes, hours, days, months)
+        
+    def disable_alarm1(self):
+        """Disables Alarm 1 and clears its flag."""
+        enables = self._read_byte(PCF85263_ALARM_ENABLES)
+        self._write_byte(PCF85263_ALARM_ENABLES, enables & 0xE0)
+        self._clear_alarm1_flag()
+        
+    @property
+    def alarm1_triggered(self):
+        """Returns True if Alarm 1 has triggered, and clears the flag if it has."""
+        flags = self._read_byte(PCF85263_FLAGS)
+        triggered = bool(flags & 0x20)
+        if triggered:
+            self._clear_alarm1_flag()
+        return triggered
+        
+    def _clear_alarm1_flag(self):
+        """Clears Alarm 1 triggered flag."""
+        # Writing 0 clears the flag, writing 1 has no effect. 
+        # Writing ~0x20 avoids unintentionally clearing other flags.
+        self._write_byte(PCF85263_FLAGS, 0xFF & ~0x20)
+
+    def set_alarm2(self, minutes=None, hours=None, weekdays=None):
+        """Sets Alarm 2. Passing None acts as a wildcard (ignores that field)."""
+        buffer = bytearray(3)
+        enables = self._read_byte(PCF85263_ALARM_ENABLES)
+        enables &= 0x1F # Clear all A2 bits (5-7)
+        
+        if minutes is not None:
+            if not (0 <= minutes <= 59): raise ValueError("Minutes out of range [0-59]")
+            buffer[0] = self._dec2bcd(minutes)
+            enables |= 0x20
+        if hours is not None:
+            if not (0 <= hours <= 23): raise ValueError("Hours out of range [0-23]")
+            buffer[1] = self._dec2bcd(hours)
+            enables |= 0x40
+        if weekdays is not None:
+            if not (0 <= weekdays <= 6): raise ValueError("Weekdays out of range [0-6]")
+            buffer[2] = weekdays # weekday matches naturally
+            enables |= 0x80
+            
+        self._write_registers(PCF85263_ALARM2_MINUTES, buffer)
+        self._write_byte(PCF85263_ALARM_ENABLES, enables)
+        
+    @property
+    def alarm2(self):
+        """Returns the current Alarm 2 settings as a tuple: (minutes, hours, weekdays).
+        Fields that are disabled (wildcards) return None."""
+        enables = self._read_byte(PCF85263_ALARM_ENABLES)
+        data = self._read_registers(PCF85263_ALARM2_MINUTES, 3)
+        
+        minutes = self._bcd2dec(data[0] & 0x7F) if (enables & 0x20) else None
+        hours = self._bcd2dec(data[1] & 0x3F) if (enables & 0x40) else None
+        weekdays = (data[2] & 0x07) if (enables & 0x80) else None
+        
+        return (minutes, hours, weekdays)
+        
+    def disable_alarm2(self):
+        """Disables Alarm 2 and clears its flag."""
+        enables = self._read_byte(PCF85263_ALARM_ENABLES)
+        self._write_byte(PCF85263_ALARM_ENABLES, enables & 0x1F)
+        self._clear_alarm2_flag()
+        
+    @property
+    def alarm2_triggered(self):
+        """Returns True if Alarm 2 has triggered, and clears the flag if it has."""
+        flags = self._read_byte(PCF85263_FLAGS)
+        triggered = bool(flags & 0x40)
+        if triggered:
+            self._clear_alarm2_flag()
+        return triggered
+        
+    def _clear_alarm2_flag(self):
+        """Clears Alarm 2 triggered flag."""
+        # Writing ~0x40 clears only Alarm 2 flag.
+        self._write_byte(PCF85263_FLAGS, 0xFF & ~0x40)
+
