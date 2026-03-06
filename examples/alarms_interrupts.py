@@ -39,25 +39,27 @@ def on_alarm2_interrupt(pin):
 interrupt_pin_a.irq(trigger=Pin.IRQ_FALLING, handler=on_alarm1_interrupt)
 interrupt_pin_b.irq(trigger=Pin.IRQ_FALLING, handler=on_alarm2_interrupt)
 
-print("Waiting for alarms to trigger...")
+print("Waiting for alarms to trigger (hardware interrupts)...")
 try:
     while True:
         # Check alarm 1 interrupt software flag
         if alarm1_fired:
             alarm1_fired = False
+            # Clear the hardware flag directly via I2C so it can trigger again next time
+            rtc.clear_alarm1_flag()
             print("⏰ Alarm 1 Interrupt Triggered!")
-            # Read the property to clear the hardware flag
-            if rtc.alarm1_triggered:
-                dt = rtc.datetime
-                print(f"Time is now {dt[3]:02d}:{dt[4]:02d}:{dt[5]:02d}")
+            dt = rtc.datetime
+            print(f"Time is now {dt[3]:02d}:{dt[4]:02d}:{dt[5]:02d}")
             
         # Check alarm 2 interrupt software flag
         if alarm2_fired:
             alarm2_fired = False
+            # Clear the hardware flag directly 
+            rtc.clear_alarm2_flag()
             print("⏰ Alarm 2 Interrupt Triggered!")
-            if rtc.alarm2_triggered:
-                dt = rtc.datetime
-                print(f"Time is now {dt[3]:02d}:{dt[4]:02d}:{dt[5]:02d}")
+            dt = rtc.datetime
+            print(f"Time is now {dt[3]:02d}:{dt[4]:02d}:{dt[5]:02d}")
+            
             rtc.disable_alarm2() # Completely disable Alarm 2
             break # Exit after alarm 2 triggers
             

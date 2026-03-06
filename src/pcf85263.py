@@ -23,7 +23,10 @@ PCF85263_ALARM1_SECONDS = const(0x08)
 PCF85263_ALARM2_MINUTES = const(0x0D)
 PCF85263_ALARM_ENABLES = const(0x10)
 
+PCF85263_PIN_IO = const(0x27)
 PCF85263_FUNCTION = const(0x28)
+PCF85263_INTA_ENABLE = const(0x29)
+PCF85263_INTB_ENABLE = const(0x2A)
 PCF85263_FLAGS = const(0x2B)
 PCF85263_STOP_ENABLE = const(0x2E)
 
@@ -221,6 +224,21 @@ class PCF85263:
             self._set_rtc_mode()
             self.start()
 
+    def _configure_interrupt_pin(self, pin, enable):
+        """Internal helper to configure PIN_IO bits for INTA or INTB."""
+        pin_io = self._read_byte(PCF85263_PIN_IO)
+        if pin == 'inta':
+            # INTAPM is bits 5:4
+            pin_io &= ~(0x03 << 4) # Clear bits 5:4
+            if enable:
+                pin_io |= (0x02 << 4) # Set to 10 (INTA output)
+        elif pin == 'intb':
+            # INTBPM is bits 3:1
+            pin_io &= ~(0x07 << 1) # Clear bits 3:1
+            if enable:
+                pin_io |= (0x02 << 1) # Set to 010 (INTB output)
+        self._write_byte(PCF85263_PIN_IO, pin_io)
+
     def set_alarm1(self, seconds=None, minutes=None, hours=None, days=None, months=None):
         """Sets Alarm 1. Passing None acts as a wildcard (ignores that field)."""
         buffer = bytearray(5)
@@ -265,12 +283,49 @@ class PCF85263:
         months = self._bcd2dec(data[4] & 0x1F) if (enables & 0x10) else None
         
         return (seconds, minutes, hours, days, months)
+
+    @property
+    def alarm1_inta_enabled(self):
+        """Returns True if Alarm 1 INTA routing is enabled."""
+        return bool(self._read_byte(PCF85263_INTA_ENABLE) & 0x20)
+
+    @alarm1_inta_enabled.setter
+    def alarm1_inta_enabled(self, enable):
+        inta_en = self._read_byte(PCF85263_INTA_ENABLE)
+        if enable:
+            inta_en |= 0x20
+            self._configure_interrupt_pin('inta', True)
+        else:
+            inta_en &= ~0x20
+        self._write_byte(PCF85263_INTA_ENABLE, inta_en)
+
+    @property
+    def alarm1_intb_enabled(self):
+        """Returns True if Alarm 1 INTB routing is enabled."""
+        return bool(self._read_byte(PCF85263_INTB_ENABLE) & 0x20)
+
+    @alarm1_intb_enabled.setter
+    def alarm1_intb_enabled(self, enable):
+        intb_en = self._read_byte(PCF85263_INTB_ENABLE)
+        if enable:
+            intb_en |= 0x20
+            self._configure_interrupt_pin('intb', True)
+        else:
+            intb_en &= ~0x20
+        self._write_byte(PCF85263_INTB_ENABLE, intb_en)
         
     def disable_alarm1(self):
         """Disables Alarm 1 and clears its flag."""
         enables = self._read_byte(PCF85263_ALARM_ENABLES)
         self._write_byte(PCF85263_ALARM_ENABLES, enables & 0xE0)
-        self._clear_alarm1_flag()
+        
+        # Clear interrupt routing (Bit 5)
+        inta_en = self._read_byte(PCF85263_INTA_ENABLE)
+        self._write_byte(PCF85263_INTA_ENABLE, inta_en & ~0x20)
+        intb_en = self._read_byte(PCF85263_INTB_ENABLE)
+        self._write_byte(PCF85263_INTB_ENABLE, intb_en & ~0x20)
+        
+        self.clear_alarm1_flag()
         
     @property
     def alarm1_triggered(self):
@@ -278,10 +333,10 @@ class PCF85263:
         flags = self._read_byte(PCF85263_FLAGS)
         triggered = bool(flags & 0x20)
         if triggered:
-            self._clear_alarm1_flag()
+            self.clear_alarm1_flag()
         return triggered
         
-    def _clear_alarm1_flag(self):
+    def clear_alarm1_flag(self):
         """Clears Alarm 1 triggered flag."""
         # Writing 0 clears the flag, writing 1 has no effect. 
         # Writing ~0x20 avoids unintentionally clearing other flags.
@@ -321,12 +376,49 @@ class PCF85263:
         weekdays = (data[2] & 0x07) if (enables & 0x80) else None
         
         return (minutes, hours, weekdays)
+
+    @property
+    def alarm2_inta_enabled(self):
+        """Returns True if Alarm 2 INTA routing is enabled."""
+        return bool(self._read_byte(PCF85263_INTA_ENABLE) & 0x40)
+
+    @alarm2_inta_enabled.setter
+    def alarm2_inta_enabled(self, enable):
+        inta_en = self._read_byte(PCF85263_INTA_ENABLE)
+        if enable:
+            inta_en |= 0x40
+            self._configure_interrupt_pin('inta', True)
+        else:
+            inta_en &= ~0x40
+        self._write_byte(PCF85263_INTA_ENABLE, inta_en)
+
+    @property
+    def alarm2_intb_enabled(self):
+        """Returns True if Alarm 2 INTB routing is enabled."""
+        return bool(self._read_byte(PCF85263_INTB_ENABLE) & 0x40)
+
+    @alarm2_intb_enabled.setter
+    def alarm2_intb_enabled(self, enable):
+        intb_en = self._read_byte(PCF85263_INTB_ENABLE)
+        if enable:
+            intb_en |= 0x40
+            self._configure_interrupt_pin('intb', True)
+        else:
+            intb_en &= ~0x40
+        self._write_byte(PCF85263_INTB_ENABLE, intb_en)
         
     def disable_alarm2(self):
         """Disables Alarm 2 and clears its flag."""
         enables = self._read_byte(PCF85263_ALARM_ENABLES)
         self._write_byte(PCF85263_ALARM_ENABLES, enables & 0x1F)
-        self._clear_alarm2_flag()
+        
+        # Clear interrupt routing (Bit 6)
+        inta_en = self._read_byte(PCF85263_INTA_ENABLE)
+        self._write_byte(PCF85263_INTA_ENABLE, inta_en & ~0x40)
+        intb_en = self._read_byte(PCF85263_INTB_ENABLE)
+        self._write_byte(PCF85263_INTB_ENABLE, intb_en & ~0x40)
+        
+        self.clear_alarm2_flag()
         
     @property
     def alarm2_triggered(self):
@@ -334,10 +426,10 @@ class PCF85263:
         flags = self._read_byte(PCF85263_FLAGS)
         triggered = bool(flags & 0x40)
         if triggered:
-            self._clear_alarm2_flag()
+            self.clear_alarm2_flag()
         return triggered
         
-    def _clear_alarm2_flag(self):
+    def clear_alarm2_flag(self):
         """Clears Alarm 2 triggered flag."""
         # Writing ~0x40 clears only Alarm 2 flag.
         self._write_byte(PCF85263_FLAGS, 0xFF & ~0x40)
