@@ -33,7 +33,7 @@ PCF85263_STOP_ENABLE = const(0x2E)
 class PCF85263:
     """PCF85263 RTC driver class."""
 
-    def __init__(self, i2c=None, address=PCF85263_DEFAULT_ADDRESS):
+    def __init__(self, i2c: I2C = None, address: int = PCF85263_DEFAULT_ADDRESS) -> None:
         """Initializes the driver.
         
         Args:
@@ -55,30 +55,30 @@ class PCF85263:
         # Ensure we are in RTC mode (0)
         self._set_rtc_mode()
 
-    def _write_byte(self, reg, val):
+    def _write_byte(self, reg: int, val: int) -> None:
         self._bytebuf[0] = val
         self.i2c.writeto_mem(self.address, reg, self._bytebuf)
 
-    def _read_byte(self, reg):
+    def _read_byte(self, reg: int) -> int:
         self.i2c.readfrom_mem_into(self.address, reg, self._bytebuf)
         return self._bytebuf[0]
         
-    def _read_registers(self, reg, count):
+    def _read_registers(self, reg: int, count: int) -> bytearray:
         buffer = bytearray(count)
         self.i2c.readfrom_mem_into(self.address, reg, buffer)
         return buffer
         
-    def _write_registers(self, reg, buffer):
+    def _write_registers(self, reg: int, buffer: bytearray) -> None:
         self.i2c.writeto_mem(self.address, reg, buffer)
         
-    def _bcd2dec(self, bcd):
+    def _bcd2dec(self, bcd: int) -> int:
         return (((bcd & 0xF0) >> 4) * 10 + (bcd & 0x0F))
 
-    def _dec2bcd(self, dec):
+    def _dec2bcd(self, dec: int) -> int:
         tens, units = divmod(dec, 10)
         return (tens << 4) + units
         
-    def _set_rtc_mode(self):
+    def _set_rtc_mode(self) -> None:
         # PCF85263_FUNCTION register
         # mode 0: RTC mode, mode 1: Stopwatch mode
         mask = self._read_byte(PCF85263_FUNCTION)
@@ -86,28 +86,28 @@ class PCF85263:
         mask |= 0x80  # Set bit 7 (100TH) to enable hundredths
         self._write_byte(PCF85263_FUNCTION, mask)
 
-    def _set_stopwatch_mode(self):
+    def _set_stopwatch_mode(self) -> None:
         # PCF85263_FUNCTION register
         mask = self._read_byte(PCF85263_FUNCTION)
         mask |= 0x10  # Set bit 4 (RTCM)
         mask |= 0x80  # Set bit 7 (100TH) to enable hundredths
         self._write_byte(PCF85263_FUNCTION, mask)
         
-    def stop(self):
+    def stop(self) -> None:
         """Stops the entire RTC clock. Note: This is not just for the stopwatch."""
         self._write_byte(PCF85263_STOP_ENABLE, 1)
         
-    def start(self):
+    def start(self) -> None:
         """Starts the entire RTC clock. Note: This is not just for the stopwatch."""
         self._write_byte(PCF85263_STOP_ENABLE, 0)
         
     @property
-    def stopped(self):
+    def stopped(self) -> bool:
         """Returns True if the RTC clock is stopped, False otherwise."""
         return self._read_byte(PCF85263_STOP_ENABLE) == 1
         
     @property
-    def datetime(self):
+    def datetime(self) -> tuple[int, int, int, int, int, int, int, int]:
         """Get or set the current datetime of the RTC.
         
         When reading, returns a tuple: (year, month, mday, hour, minute, second, weekday, yearday)
@@ -132,7 +132,7 @@ class PCF85263:
         return (year, month, day, hours, minutes, seconds, weekday, 0)
         
     @datetime.setter
-    def datetime(self, dt):
+    def datetime(self, dt: tuple[int, int, int, int, int, int, int, int]) -> None:
         year, month, day, hours, minutes, seconds, weekday, yearday = dt
         
         # Validations
@@ -158,7 +158,7 @@ class PCF85263:
         self.start()
 
     @property
-    def stopwatch_time(self):
+    def stopwatch_time(self) -> tuple[int, int, int, int]:
         """Get or set the current stopwatch time.
         
         When reading, returns a tuple: (hours, minutes, seconds, hundredths)
@@ -182,7 +182,7 @@ class PCF85263:
         return (hours, minutes, seconds, hundredths)
 
     @stopwatch_time.setter
-    def stopwatch_time(self, time_tuple):
+    def stopwatch_time(self, time_tuple: tuple[int, int, int, int]) -> None:
         hours, minutes, seconds, hundredths = time_tuple
         
         if not (0 <= hundredths <= 99): raise ValueError("Hundredths out of range [0-99]")
@@ -205,18 +205,18 @@ class PCF85263:
         self.stop()
         self._write_registers(PCF85263_SECONDS_100TH, buffer)
 
-    def stopwatch_reset(self):
+    def stopwatch_reset(self) -> None:
         """Resets the stopwatch to 0 and stops it."""
         self.stopwatch_time = (0, 0, 0, 0)
 
     @property
-    def stopwatch_mode(self):
+    def stopwatch_mode(self) -> bool:
         """Get or set the RTC mode to Real-Time Clock (False) or Stopwatch (True)."""
         mask = self._read_byte(PCF85263_FUNCTION)
         return bool(mask & 0x10)
 
     @stopwatch_mode.setter
-    def stopwatch_mode(self, is_stopwatch):
+    def stopwatch_mode(self, is_stopwatch: bool) -> None:
         if is_stopwatch:
             self.stop()
             self._set_stopwatch_mode()
@@ -224,7 +224,7 @@ class PCF85263:
             self._set_rtc_mode()
             self.start()
 
-    def _configure_interrupt_pin(self, pin, enable):
+    def _configure_interrupt_pin(self, pin: str, enable: bool) -> None:
         """Internal helper to configure PIN_IO bits for INTA or INTB."""
         pin_io = self._read_byte(PCF85263_PIN_IO)
         if pin == 'inta':
@@ -239,7 +239,7 @@ class PCF85263:
                 pin_io |= (0x02 << 1) # Set to 010 (INTB output)
         self._write_byte(PCF85263_PIN_IO, pin_io)
 
-    def set_alarm1(self, seconds=None, minutes=None, hours=None, days=None, months=None):
+    def set_alarm1(self, seconds: int = None, minutes: int = None, hours: int = None, days: int = None, months: int = None) -> None:
         """Sets Alarm 1. Passing None acts as a wildcard (ignores that field)."""
         buffer = bytearray(5)
         enables = self._read_byte(PCF85263_ALARM_ENABLES)
@@ -270,7 +270,7 @@ class PCF85263:
         self._write_byte(PCF85263_ALARM_ENABLES, enables)
         
     @property
-    def alarm1(self):
+    def alarm1(self) -> tuple:
         """Returns the current Alarm 1 settings as a tuple: (seconds, minutes, hours, days, months).
         Fields that are disabled (wildcards) return None."""
         enables = self._read_byte(PCF85263_ALARM_ENABLES)
@@ -285,12 +285,12 @@ class PCF85263:
         return (seconds, minutes, hours, days, months)
 
     @property
-    def alarm1_inta_enabled(self):
+    def alarm1_inta_enabled(self) -> bool:
         """Returns True if Alarm 1 INTA routing is enabled."""
         return bool(self._read_byte(PCF85263_INTA_ENABLE) & 0x20)
 
     @alarm1_inta_enabled.setter
-    def alarm1_inta_enabled(self, enable):
+    def alarm1_inta_enabled(self, enable: bool) -> None:
         inta_en = self._read_byte(PCF85263_INTA_ENABLE)
         if enable:
             inta_en |= 0x20
@@ -300,12 +300,12 @@ class PCF85263:
         self._write_byte(PCF85263_INTA_ENABLE, inta_en)
 
     @property
-    def alarm1_intb_enabled(self):
+    def alarm1_intb_enabled(self) -> bool:
         """Returns True if Alarm 1 INTB routing is enabled."""
         return bool(self._read_byte(PCF85263_INTB_ENABLE) & 0x20)
 
     @alarm1_intb_enabled.setter
-    def alarm1_intb_enabled(self, enable):
+    def alarm1_intb_enabled(self, enable: bool) -> None:
         intb_en = self._read_byte(PCF85263_INTB_ENABLE)
         if enable:
             intb_en |= 0x20
@@ -314,7 +314,7 @@ class PCF85263:
             intb_en &= ~0x20
         self._write_byte(PCF85263_INTB_ENABLE, intb_en)
         
-    def disable_alarm1(self):
+    def disable_alarm1(self) -> None:
         """Disables Alarm 1 and clears its flag."""
         enables = self._read_byte(PCF85263_ALARM_ENABLES)
         self._write_byte(PCF85263_ALARM_ENABLES, enables & 0xE0)
@@ -328,7 +328,7 @@ class PCF85263:
         self.clear_alarm1_flag()
         
     @property
-    def alarm1_triggered(self):
+    def alarm1_triggered(self) -> bool:
         """Returns True if Alarm 1 has triggered, and clears the flag if it has."""
         flags = self._read_byte(PCF85263_FLAGS)
         triggered = bool(flags & 0x20)
@@ -336,13 +336,13 @@ class PCF85263:
             self.clear_alarm1_flag()
         return triggered
         
-    def clear_alarm1_flag(self):
+    def clear_alarm1_flag(self) -> None:
         """Clears Alarm 1 triggered flag."""
         # Writing 0 clears the flag, writing 1 has no effect. 
         # Writing ~0x20 avoids unintentionally clearing other flags.
         self._write_byte(PCF85263_FLAGS, 0xFF & ~0x20)
 
-    def set_alarm2(self, minutes=None, hours=None, weekdays=None):
+    def set_alarm2(self, minutes: int = None, hours: int = None, weekdays: int = None) -> None:
         """Sets Alarm 2. Passing None acts as a wildcard (ignores that field)."""
         buffer = bytearray(3)
         enables = self._read_byte(PCF85263_ALARM_ENABLES)
@@ -365,7 +365,7 @@ class PCF85263:
         self._write_byte(PCF85263_ALARM_ENABLES, enables)
         
     @property
-    def alarm2(self):
+    def alarm2(self) -> tuple:
         """Returns the current Alarm 2 settings as a tuple: (minutes, hours, weekdays).
         Fields that are disabled (wildcards) return None."""
         enables = self._read_byte(PCF85263_ALARM_ENABLES)
@@ -378,12 +378,12 @@ class PCF85263:
         return (minutes, hours, weekdays)
 
     @property
-    def alarm2_inta_enabled(self):
+    def alarm2_inta_enabled(self) -> bool:
         """Returns True if Alarm 2 INTA routing is enabled."""
         return bool(self._read_byte(PCF85263_INTA_ENABLE) & 0x40)
 
     @alarm2_inta_enabled.setter
-    def alarm2_inta_enabled(self, enable):
+    def alarm2_inta_enabled(self, enable: bool) -> None:
         inta_en = self._read_byte(PCF85263_INTA_ENABLE)
         if enable:
             inta_en |= 0x40
@@ -393,12 +393,12 @@ class PCF85263:
         self._write_byte(PCF85263_INTA_ENABLE, inta_en)
 
     @property
-    def alarm2_intb_enabled(self):
+    def alarm2_intb_enabled(self) -> bool:
         """Returns True if Alarm 2 INTB routing is enabled."""
         return bool(self._read_byte(PCF85263_INTB_ENABLE) & 0x40)
 
     @alarm2_intb_enabled.setter
-    def alarm2_intb_enabled(self, enable):
+    def alarm2_intb_enabled(self, enable: bool) -> None:
         intb_en = self._read_byte(PCF85263_INTB_ENABLE)
         if enable:
             intb_en |= 0x40
@@ -407,7 +407,7 @@ class PCF85263:
             intb_en &= ~0x40
         self._write_byte(PCF85263_INTB_ENABLE, intb_en)
         
-    def disable_alarm2(self):
+    def disable_alarm2(self) -> None:
         """Disables Alarm 2 and clears its flag."""
         enables = self._read_byte(PCF85263_ALARM_ENABLES)
         self._write_byte(PCF85263_ALARM_ENABLES, enables & 0x1F)
@@ -421,7 +421,7 @@ class PCF85263:
         self.clear_alarm2_flag()
         
     @property
-    def alarm2_triggered(self):
+    def alarm2_triggered(self) -> bool:
         """Returns True if Alarm 2 has triggered, and clears the flag if it has."""
         flags = self._read_byte(PCF85263_FLAGS)
         triggered = bool(flags & 0x40)
@@ -429,7 +429,7 @@ class PCF85263:
             self.clear_alarm2_flag()
         return triggered
         
-    def clear_alarm2_flag(self):
+    def clear_alarm2_flag(self) -> None:
         """Clears Alarm 2 triggered flag."""
         # Writing ~0x40 clears only Alarm 2 flag.
         self._write_byte(PCF85263_FLAGS, 0xFF & ~0x40)
