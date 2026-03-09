@@ -4,8 +4,8 @@ from pcf85263 import PCF85263
 
 # Initialize I2C - adjust depending on your board
 i2c = I2C(0)
-interrupt_pin_a = Pin("D8", Pin.IN, Pin.PULL_UP) # Example pin for INTA
-interrupt_pin_b = Pin("D9", Pin.IN, Pin.PULL_UP) # Example pin for INTB
+interrupt_pin_a = Pin("D8", Pin.IN) # Example pin for INTA
+interrupt_pin_b = Pin("D9", Pin.IN) # Example pin for INTB
 
 # Create RTC instance
 rtc = PCF85263(i2c)
@@ -39,27 +39,25 @@ def on_alarm2_interrupt(pin):
 interrupt_pin_a.irq(trigger=Pin.IRQ_FALLING, handler=on_alarm1_interrupt)
 interrupt_pin_b.irq(trigger=Pin.IRQ_FALLING, handler=on_alarm2_interrupt)
 
-print("Waiting for alarms to trigger (hardware interrupts)...")
+print("Waiting for alarms to trigger...")
 try:
     while True:
         # Check alarm 1 interrupt software flag
         if alarm1_fired:
             alarm1_fired = False
-            # Clear the hardware flag directly via I2C so it can trigger again next time
-            rtc.clear_alarm1_flag()
             print("⏰ Alarm 1 Interrupt Triggered!")
+            rtc.clear_alarm1_flag() # Clear the hardware flag for Alarm 1
+            rtc.disable_alarm1() # Disable Alarm 1 to prevent retriggering
             dt = rtc.datetime
             print(f"Time is now {dt[3]:02d}:{dt[4]:02d}:{dt[5]:02d}")
-            
+        
         # Check alarm 2 interrupt software flag
         if alarm2_fired:
             alarm2_fired = False
-            # Clear the hardware flag directly 
-            rtc.clear_alarm2_flag()
             print("⏰ Alarm 2 Interrupt Triggered!")
+            rtc.clear_alarm2_flag() # Clear the hardware flag for Alarm 2
             dt = rtc.datetime
             print(f"Time is now {dt[3]:02d}:{dt[4]:02d}:{dt[5]:02d}")
-            
             rtc.disable_alarm2() # Completely disable Alarm 2
             break # Exit after alarm 2 triggers
             
