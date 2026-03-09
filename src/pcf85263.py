@@ -29,6 +29,7 @@ PCF85263_INTA_ENABLE = const(0x29)
 PCF85263_INTB_ENABLE = const(0x2A)
 PCF85263_FLAGS = const(0x2B)
 PCF85263_STOP_ENABLE = const(0x2E)
+PCF85263_RESETS = const(0x2F)
 
 # Function register bits
 PCF85263_FUNC_100TH = const(0x80)
@@ -137,6 +138,10 @@ class PCF85263:
         """Returns True if the RTC clock is stopped, False otherwise."""
         return self._read_byte(PCF85263_STOP_ENABLE) == 1
         
+    def software_reset(self):
+        """Performs a software reset of the RTC (Clears also prescaler and timestamp)."""
+        self._write_byte(PCF85263_RESETS, 0x2C)
+
     @property
     def oscillator_stopped(self):
         """Returns True if the oscillator is stopped. If True, it might indicate an undervoltage issue."""
