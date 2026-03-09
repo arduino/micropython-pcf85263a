@@ -53,9 +53,13 @@ PCF85263_A2E_HOURS = const(0x40)
 PCF85263_A2E_WDAYS = const(0x80)
 PCF85263_A2E_MASK = const(0xE0)
 
-# Interrupt/Flag bits
+# Interrupt bits
 PCF85263_INT_A1 = const(0x10)
 PCF85263_INT_A2 = const(0x08)
+
+# Flag bits (Register 0x2B)
+PCF85263_FLAG_A1 = const(0x20)
+PCF85263_FLAG_A2 = const(0x40)
 
 class PCF85263:
     """PCF85263 RTC driver class."""
@@ -363,7 +367,7 @@ class PCF85263:
     def alarm1_triggered(self):
         """Returns True if Alarm 1 has triggered, and clears the flag if it has."""
         flags = self._read_byte(PCF85263_FLAGS)
-        triggered = bool(flags & PCF85263_INT_A1)
+        triggered = bool(flags & PCF85263_FLAG_A1)
         if triggered:
             self.clear_alarm1_flag()
         return triggered
@@ -371,8 +375,55 @@ class PCF85263:
     def clear_alarm1_flag(self):
         """Clears Alarm 1 triggered flag."""
         # Writing 0 clears the flag, writing 1 has no effect. 
-        # Writing ~PCF85263_INT_A1 avoids unintentionally clearing other flags.
-        self._write_byte(PCF85263_FLAGS, 0xFF & ~PCF85263_INT_A1)
+        # Writing ~PCF85263_FLAG_A1 avoids unintentionally clearing other flags.
+        self._write_byte(PCF85263_FLAGS, 0xFF & ~PCF85263_FLAG_A1)
+
+    def set_stopwatch_alarm1(self, hours=None, minutes=None, seconds=None):
+        """Sets Alarm 1 in stopwatch mode. Passing None acts as a wildcard (ignores that field)."""
+        buffer = bytearray(5)
+        enables = self._read_byte(PCF85263_ALARM_ENABLES)
+        enables &= ~PCF85263_A1E_MASK # Clear all A1 bits (0-4)
+        
+        if seconds is not None:
+            if not (0 <= seconds <= 59): raise ValueError("Seconds out of range [0-59]")
+            buffer[0] = self._dec2bcd(seconds)
+            enables |= PCF85263_A1E_SECS
+            
+        if minutes is not None:
+            if not (0 <= minutes <= 59): raise ValueError("Minutes out of range [0-59]")
+            buffer[1] = self._dec2bcd(minutes)
+            enables |= PCF85263_A1E_MINS
+            
+        if hours is not None:
+            if not (0 <= hours <= 999999): raise ValueError("Hours out of range [0-999999]")
+            buffer[2] = self._dec2bcd(hours % 100)
+            buffer[3] = self._dec2bcd((hours % 10000) // 100)
+            buffer[4] = self._dec2bcd(hours // 10000)
+            enables |= (PCF85263_A1E_HOURS | PCF85263_A1E_DAYS | PCF85263_A1E_MONS)
+            
+        self._write_registers(PCF85263_ALARM1_SECONDS, buffer)
+        self._write_byte(PCF85263_ALARM_ENABLES, enables)
+        
+    @property
+    def stopwatch_alarm1(self):
+        """Returns the current Alarm 1 settings for stopwatch mode as a tuple: (hours, minutes, seconds).
+        Fields that are disabled (wildcards) return None."""
+        enables = self._read_byte(PCF85263_ALARM_ENABLES)
+        data = self._read_registers(PCF85263_ALARM1_SECONDS, 5)
+        
+        seconds = self._bcd2dec(data[0] & 0x7F) if (enables & PCF85263_A1E_SECS) else None
+        minutes = self._bcd2dec(data[1] & 0x7F) if (enables & PCF85263_A1E_MINS) else None
+        
+        # In stopwatch mode, hours uses 3 registers
+        if (enables & PCF85263_A1E_HOURS) and (enables & PCF85263_A1E_DAYS) and (enables & PCF85263_A1E_MONS):
+            hours_L = self._bcd2dec(data[2] & 0xFF)
+            hours_M = self._bcd2dec(data[3] & 0xFF)
+            hours_H = self._bcd2dec(data[4] & 0xFF)
+            hours = hours_H * 10000 + hours_M * 100 + hours_L
+        else:
+            hours = None
+            
+        return (hours, minutes, seconds)
 
     def set_alarm2(self, minutes=None, hours=None, weekdays=None):
         """Sets Alarm 2. Passing None acts as a wildcard (ignores that field)."""
@@ -456,13 +507,53 @@ class PCF85263:
     def alarm2_triggered(self):
         """Returns True if Alarm 2 has triggered, and clears the flag if it has."""
         flags = self._read_byte(PCF85263_FLAGS)
-        triggered = bool(flags & PCF85263_INT_A2)
+        triggered = bool(flags & PCF85263_FLAG_A2)
         if triggered:
             self.clear_alarm2_flag()
         return triggered
         
     def clear_alarm2_flag(self):
         """Clears Alarm 2 triggered flag."""
-        # Writing ~PCF85263_INT_A2 clears only Alarm 2 flag.
-        self._write_byte(PCF85263_FLAGS, 0xFF & ~PCF85263_INT_A2)
+        # Writing ~PCF85263_FLAG_A2 clears only Alarm 2 flag.
+        self._write_byte(PCF85263_FLAGS, 0xFF & ~PCF85263_FLAG_A2)
+
+    def set_stopwatch_alarm2(self, hours=None, minutes=None):
+        """Sets Alarm 2 in stopwatch mode. Passing None acts as a wildcard (ignores that field)."""
+        buffer = bytearray(3)
+        enables = self._read_byte(PCF85263_ALARM_ENABLES)
+        enables &= ~PCF85263_A2E_MASK # Clear all A2 bits (5-7)
+        
+        if minutes is not None:
+            if not (0 <= minutes <= 59): raise ValueError("Minutes out of range [0-59]")
+            buffer[0] = self._dec2bcd(minutes)
+            enables |= PCF85263_A2E_MINS
+            
+        if hours is not None:
+            if not (0 <= hours <= 9999): raise ValueError("Hours out of range [0-9999]")
+            buffer[1] = self._dec2bcd(hours % 100)
+            buffer[2] = self._dec2bcd(hours // 100)
+            enables |= (PCF85263_A2E_HOURS | PCF85263_A2E_WDAYS)
+            
+        self._write_registers(PCF85263_ALARM2_MINUTES, buffer)
+        self._write_byte(PCF85263_ALARM_ENABLES, enables)
+        
+    @property
+    def stopwatch_alarm2(self):
+        """Returns the current Alarm 2 settings for stopwatch mode as a tuple: (hours, minutes).
+        Fields that are disabled (wildcards) return None."""
+        enables = self._read_byte(PCF85263_ALARM_ENABLES)
+        data = self._read_registers(PCF85263_ALARM2_MINUTES, 3)
+        
+        minutes = self._bcd2dec(data[0] & 0x7F) if (enables & PCF85263_A2E_MINS) else None
+        
+        # In stopwatch mode, hours uses 2 registers
+        if (enables & PCF85263_A2E_HOURS) and (enables & PCF85263_A2E_WDAYS):
+            hours_L = self._bcd2dec(data[1] & 0xFF)
+            hours_M = self._bcd2dec(data[2] & 0xFF)
+            hours = hours_M * 100 + hours_L
+        else:
+            hours = None
+            
+        return (hours, minutes)
+
 
