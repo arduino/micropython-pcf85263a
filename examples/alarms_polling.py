@@ -29,8 +29,9 @@ try:
             dt = rtc.datetime
             print(f"⏰ Alarm 1 triggered! Time is now {dt[3]:02d}:{dt[4]:02d}:{dt[5]:02d}")
             # Note: Reading alarm1_triggered automatically clears the internal flag,
-            # so the alarm remains active and will trigger again when the condition 
+            # so the alarm remains active and would trigger again when the condition 
             # is met (e.g. next minute at 55 seconds).
+            rtc.disable_alarm1() # Disable Alarm 1 to prevent it from triggering again until we set it again
             
         # Check alarm 2
         if rtc.alarm2_triggered:
