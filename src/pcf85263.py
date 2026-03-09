@@ -114,7 +114,7 @@ class PCF85263:
         # mode 0: RTC mode, mode 1: Stopwatch mode
         mask = self._read_byte(PCF85263_FUNCTION)
         mask &= ~PCF85263_FUNC_RTCM  # Clear bit 4 (RTCM)
-        mask |= PCF85263_FUNC_100TH  # Set bit 7 (100TH) to enable hundredths
+        mask &= ~PCF85263_FUNC_100TH # Clear bit 7 (100TH) to save power
         self._write_byte(PCF85263_FUNCTION, mask)
 
     def _set_stopwatch_mode(self):
