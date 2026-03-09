@@ -134,6 +134,11 @@ class PCF85263:
         return self._read_byte(PCF85263_STOP_ENABLE) == 1
         
     @property
+    def oscillator_stopped(self):
+        """Returns True if the oscillator is stopped. If True, it might indicate an undervoltage issue."""
+        return bool(self._read_byte(PCF85263_SECONDS) & 0x80)
+
+    @property
     def datetime(self):
         """Get or set the current datetime of the RTC.
         
