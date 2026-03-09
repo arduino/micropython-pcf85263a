@@ -56,9 +56,9 @@ try:
             alarm2_fired = False
             print("⏰ Alarm 2 Interrupt Triggered!")
             rtc.clear_alarm2_flag() # Clear the hardware flag for Alarm 2
+            rtc.disable_alarm2() # Completely disable Alarm 2
             dt = rtc.datetime
             print(f"Time is now {dt[3]:02d}:{dt[4]:02d}:{dt[5]:02d}")
-            rtc.disable_alarm2() # Completely disable Alarm 2
             break # Exit after alarm 2 triggers
             
         time.sleep(0.1) # Short nap to yield to other processes without missing software flags
