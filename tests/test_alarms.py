@@ -76,5 +76,64 @@ def test_alarms():
     
     print("✅ Alarms test passed!")
 
+def test_alarms_interrupts():
+    print("Initializing I2C for interrupts test...")
+    try:
+        from machine import Pin
+        i2c = I2C(0)
+        # Using arbitrary pins D8 and D9 assuming a board like Nano ESP32 or similar is connected
+        # with INTA connected to D8 and INTB connected to D9
+        interrupt_pin_a = Pin("D8", Pin.IN)
+        interrupt_pin_b = Pin("D9", Pin.IN)
+    except Exception as e:
+        print(f"Skipping interrupt tests: hardware setup not fully available ({e})")
+        return
+
+    rtc = PCF85263(i2c)
+    
+    # Preemptively disable alarms and clear flags
+    rtc.disable_alarm1()
+    rtc.disable_alarm2()
+
+    # Set clock to 57 seconds
+    rtc.datetime = (2024, 12, 31, 23, 59, 57, 2, 0)
+    
+    # State tracker for interrupts
+    state = {'a1': False, 'a2': False}
+
+    def on_alarm1(pin):
+        state['a1'] = True
+
+    def on_alarm2(pin):
+        state['a2'] = True
+        
+    interrupt_pin_a.irq(trigger=Pin.IRQ_FALLING, handler=on_alarm1)
+    interrupt_pin_b.irq(trigger=Pin.IRQ_FALLING, handler=on_alarm2)
+
+    # Configure Alarm 1 and Alarm 2
+    rtc.set_alarm1(seconds=58) # triggers in 1 second
+    rtc.alarm1_inta_enabled = True
+
+    rtc.set_alarm2(minutes=0) # triggers in 3 seconds at midnight
+    rtc.alarm2_intb_enabled = True
+
+    print("Waiting 4 seconds for hardware interrupts to fire...")
+    time.sleep(4)
+
+    assert state['a1'], "Hardware interrupt for Alarm 1 (INTA/D8) failed to trigger"
+    assert state['a2'], "Hardware interrupt for Alarm 2 (INTB/D9) failed to trigger"
+
+    print("Disabling alarms...")
+    rtc.disable_alarm1()
+    rtc.disable_alarm2()
+
+    # Disable IRQs
+    interrupt_pin_a.irq(handler=None)
+    interrupt_pin_b.irq(handler=None)
+    
+    print("✅ Alarm interrupts test passed!")
+
 if __name__ == "__main__":
     test_alarms()
+    test_alarms_interrupts()
+
