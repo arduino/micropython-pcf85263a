@@ -15,15 +15,15 @@ from pcf85263a import PCF85263A
 WIFI_SSID = "" # Adjust for your network
 WIFI_PASSWORD = "" # Adjust for your network
 
-def connect_wifi(ssid, password):
+def connect_wifi(wifi, ssid, password):
 	"""
 	Connect to Wi-Fi network using provided SSID and password.
 
 	Parameters:
+		wifi (network.WLAN): The WLAN interface to use for the connection.
 		ssid (str): The SSID of the Wi-Fi network to connect to.
 		password (str): The password for the Wi-Fi network.
-	"""	
-	wifi = network.WLAN(network.STA_IF)
+	"""		
 	if not wifi.isconnected():
 		print('Connecting to network...')
 		wifi.active(True)
@@ -32,13 +32,16 @@ def connect_wifi(ssid, password):
 			sleep(1)		
 	print('Network config:', wifi.ifconfig()) 
 
-# Ask user to enter Wi-Fi credentials if not set
-if not WIFI_SSID:
-	WIFI_SSID = input("Enter Wi-Fi SSID: ")
-if not WIFI_PASSWORD:
-	WIFI_PASSWORD = input("Enter Wi-Fi Password: ")
+wifi = network.WLAN(network.STA_IF)
 
-connect_wifi(WIFI_SSID, WIFI_PASSWORD)
+if not wifi.isconnected():	
+	# Ask user to enter Wi-Fi credentials if not set
+	if not WIFI_SSID:
+		WIFI_SSID = input("Enter Wi-Fi SSID: ")
+	if not WIFI_PASSWORD:
+		WIFI_PASSWORD = input("Enter Wi-Fi Password: ")
+	connect_wifi(wifi, WIFI_SSID, WIFI_PASSWORD)
+
 settime() # Update RTC from NTP server (requires Internet connection)
 
 bus = I2C(0) # Initialize I2C bus (adjust parameters if needed for your hardware)
