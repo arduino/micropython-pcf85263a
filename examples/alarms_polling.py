@@ -1,3 +1,11 @@
+"""
+Example showing how to configure alarms and poll for their 
+status using the PCF85263A RTC hardware flags.
+
+Initial author: Sebastian Romero (s.romero@arduino.cc)
+Copyright (C) Arduino s.r.l. and/or its affiliated companies
+"""
+
 from machine import I2C
 import time
 from pcf85263a import PCF85263A
@@ -15,11 +23,11 @@ print("Current time set to 23:59:50")
 
 # Set Alarm 1 to trigger at exactly 23:59:55
 print("Setting Alarm 1 for 23:59:55 (matches exactly 55 seconds)...")
-rtc.set_alarm1(seconds=55)
+rtc.set_alarm1(second=55)
 
 # Set Alarm 2 to trigger when minutes roll over to 0 (midnight)
 print("Setting Alarm 2 for minute 0 (midnight rollover)...")
-rtc.set_alarm2(minutes=0)
+rtc.set_alarm2(minute=0)
 
 print("Waiting for alarms to trigger (polling)...")
 try:

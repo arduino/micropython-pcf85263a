@@ -89,26 +89,26 @@ def test_stopwatch_alarms():
     rtc.stopwatch_mode = True
 
     print("Testing stopwatch Alarm 1...")
-    rtc.set_stopwatch_alarm1(hours=999999, minutes=59, seconds=59)
+    rtc.set_stopwatch_alarm1(hour=999999, minute=59, second=59)
     a1_cfg = rtc.stopwatch_alarm1
     assert a1_cfg == (999999, 59, 59), f"Stopwatch Alarm 1 config mismatch: {a1_cfg}"
 
-    rtc.set_stopwatch_alarm1(seconds=15)
+    rtc.set_stopwatch_alarm1(second=15)
     a1_cfg = rtc.stopwatch_alarm1
     assert a1_cfg == (None, None, 15), f"Stopwatch Alarm 1 wildcard mismatch: {a1_cfg}"
 
     print("Testing stopwatch Alarm 2...")
-    rtc.set_stopwatch_alarm2(hours=9999, minutes=42)
+    rtc.set_stopwatch_alarm2(hour=9999, minute=42)
     a2_cfg = rtc.stopwatch_alarm2
     assert a2_cfg == (9999, 42), f"Stopwatch Alarm 2 config mismatch: {a2_cfg}"
 
-    rtc.set_stopwatch_alarm2(hours=123)
+    rtc.set_stopwatch_alarm2(hour=123)
     a2_cfg = rtc.stopwatch_alarm2
     assert a2_cfg == (123, None), f"Stopwatch Alarm 2 wildcard mismatch: {a2_cfg}"
 
     print("Testing if Alarm 1 triggers...")
     rtc.stopwatch_reset()
-    rtc.set_stopwatch_alarm1(hours=0, minutes=0, seconds=2)
+    rtc.set_stopwatch_alarm1(hour=0, minute=0, second=2)
     rtc.start()
     
     time.sleep(2.5)

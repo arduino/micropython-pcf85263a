@@ -25,7 +25,7 @@ def test_alarms():
     
     # Configure Alarm 1 for exactly 59 seconds (2 seconds from now) with INTA
     print("Setting Alarm 1 for 59 seconds (with INTA)...")
-    rtc.set_alarm1(seconds=59)
+    rtc.set_alarm1(second=59)
     rtc.alarm1_inta_enabled = True
     # Check that reading it back works and only seconds are set
     a1_cfg = rtc.alarm1
@@ -34,7 +34,7 @@ def test_alarms():
     
     # Configure Alarm 2 for minute 0 (3 seconds from now when rollover happens to 00:00:00) with INTB
     print("Setting Alarm 2 for 0 minutes (with INTB)...")
-    rtc.set_alarm2(minutes=0)
+    rtc.set_alarm2(minute=0)
     rtc.alarm2_intb_enabled = True
     # Check that reading it back works and only minutes are set
     a2_cfg = rtc.alarm2
@@ -111,10 +111,10 @@ def test_alarms_interrupts():
     interrupt_pin_b.irq(trigger=Pin.IRQ_FALLING, handler=on_alarm2)
 
     # Configure Alarm 1 and Alarm 2
-    rtc.set_alarm1(seconds=58) # triggers in 1 second
+    rtc.set_alarm1(second=58) # triggers in 1 second
     rtc.alarm1_inta_enabled = True
 
-    rtc.set_alarm2(minutes=0) # triggers in 3 seconds at midnight
+    rtc.set_alarm2(minute=0) # triggers in 3 seconds at midnight
     rtc.alarm2_intb_enabled = True
 
     print("Waiting 4 seconds for hardware interrupts to fire...")

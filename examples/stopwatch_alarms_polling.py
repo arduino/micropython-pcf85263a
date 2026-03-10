@@ -1,3 +1,11 @@
+"""
+Example demonstrating how to configure and use alarms while 
+the PCF85263A RTC is operating in stopwatch mode.
+
+Initial author: Sebastian Romero (s.romero@arduino.cc)
+Copyright (C) Arduino s.r.l. and/or its affiliated companies
+"""
+
 from machine import I2C
 import time
 from pcf85263a import PCF85263A
@@ -21,7 +29,7 @@ rtc.stopwatch_reset()
 
 # Configure Alarm 1 to trigger at 5 seconds
 print("Setting Alarm 1 for 0 hours, 0 minutes, and 5 seconds.")
-rtc.set_stopwatch_alarm1(hours=0, minutes=0, seconds=5)
+rtc.set_stopwatch_alarm1(hour=0, minute=0, second=5)
 
 # Start counting
 print("Starting stopwatch...")

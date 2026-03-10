@@ -1,3 +1,11 @@
+"""
+Example showing how to use the stopwatch mode of the PCF85263A RTC 
+for measuring elapsed time.
+
+Initial author: Sebastian Romero (s.romero@arduino.cc)
+Copyright (C) Arduino s.r.l. and/or its affiliated companies
+"""
+
 from machine import I2C
 import time
 from pcf85263a import PCF85263A
