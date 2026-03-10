@@ -1,6 +1,6 @@
 """
 This script connects to a Wi-Fi network, synchronizes the system time 
-using NTP, and then sets the PCF85263 RTC module to the current time.
+using NTP, and then sets the PCF85263A RTC module to the current time.
 
 Initial author: Sebastian Romero (s.romero@arduino.cc)
 Copyright (C) Arduino s.r.l. and/or its affiliated companies
@@ -10,7 +10,7 @@ from time import sleep, localtime
 from ntptime import settime
 import network
 from machine import I2C
-from pcf85263 import PCF85263
+from pcf85263a import PCF85263A
 
 WIFI_SSID = "" # Adjust for your network
 WIFI_PASSWORD = "" # Adjust for your network
@@ -42,7 +42,7 @@ connect_wifi(WIFI_SSID, WIFI_PASSWORD)
 settime() # Update RTC from NTP server (requires Internet connection)
 
 bus = I2C(0) # Initialize I2C bus (adjust parameters if needed for your hardware)
-rtc = PCF85263(bus)
+rtc = PCF85263A(bus)
 
 rtc.datetime = localtime() # Set RTC to current time (UTC)
 t = rtc.datetime # Read back time from RTC

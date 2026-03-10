@@ -2,9 +2,9 @@ import time
 from machine import I2C
 
 try:
-    from pcf85263 import PCF85263
+    from pcf85263a import PCF85263A
 except ImportError:
-    from pcf85263 import PCF85263
+    from pcf85263a import PCF85263A
 
 def elapsed_time_in_hundredths(t_tuple):
     h, m, s, hs = t_tuple
@@ -17,7 +17,7 @@ def test_stopwatch_mode():
     except Exception as e:
         raise RuntimeError(f"Failed to init I2C(0): {e}")
 
-    rtc = PCF85263(i2c)
+    rtc = PCF85263A(i2c)
 
     # Set to stopwatch mode
     print("Setting to stopwatch mode...")
@@ -85,7 +85,7 @@ def test_stopwatch_alarms():
     except Exception as e:
         raise RuntimeError(f"Failed to init I2C(0): {e}")
 
-    rtc = PCF85263(i2c)
+    rtc = PCF85263A(i2c)
     rtc.stopwatch_mode = True
 
     print("Testing stopwatch Alarm 1...")

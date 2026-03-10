@@ -1,5 +1,5 @@
 """
-Basic example showing how to read the current time from the PCF85263 RTC.
+Basic example showing how to read the current time from the PCF85263A RTC.
 
 Initial author: Sebastian Romero (s.romero@arduino.cc)
 Copyright (C) Arduino s.r.l. and/or its affiliated companies
@@ -9,9 +9,9 @@ from machine import I2C
 from time import sleep
 
 try:
-    from pcf85263 import PCF85263
+    from pcf85263a import PCF85263A
 except ImportError:
-    print("Please install the pcf85263 module first.")
+    print("Please install the pcf85263a module first.")
     import sys
     sys.exit(1)
 
@@ -19,7 +19,7 @@ except ImportError:
 i2c = I2C(0)
 
 # Initialize the RTC
-rtc = PCF85263(i2c)
+rtc = PCF85263A(i2c)
 
 print("Starting RTC Clock Reader...")
 

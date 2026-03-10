@@ -1,12 +1,12 @@
 from machine import I2C
 import time
-from pcf85263 import PCF85263
+from pcf85263a import PCF85263A
 
 # Initialize I2C - adjust depending on your board
 i2c = I2C(0)
 
 # Create RTC instance
-rtc = PCF85263(i2c)
+rtc = PCF85263A(i2c)
 
 # Switch to stopwatch mode
 rtc.stopwatch_mode = True

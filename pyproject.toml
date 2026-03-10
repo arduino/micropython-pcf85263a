@@ -1,7 +1,7 @@
 [[tool.pydoc-markdown.loaders]]
 type = "python"
 search_path = [ "./src" ]
-packages = ["pcf85263"]
+packages = ["pcf85263a"]
 
 [[tool.pydoc-markdown.processors]]
 type = "filter"

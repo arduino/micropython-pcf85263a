@@ -1,6 +1,6 @@
 from machine import I2C, Pin
 import time
-from pcf85263 import PCF85263
+from pcf85263a import PCF85263A
 
 # Initialize I2C - adjust depending on your board
 i2c = I2C(0)
@@ -8,7 +8,7 @@ interrupt_pin_a = Pin("D8", Pin.IN) # Example pin for INTA
 interrupt_pin_b = Pin("D9", Pin.IN) # Example pin for INTB
 
 # Create RTC instance
-rtc = PCF85263(i2c)
+rtc = PCF85263A(i2c)
 
 # Set the current time to slightly before the alarm goes off
 # (2024, 12, 31, 23, 59, 50, 2, 0) -> Year, Month, Day, Hour, Minute, Second, Weekday, Yearday

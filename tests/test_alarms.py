@@ -2,9 +2,9 @@ import time
 from machine import I2C
 
 try:
-    from pcf85263 import PCF85263
+    from pcf85263a import PCF85263A
 except ImportError:
-    from pcf85263 import PCF85263
+    from pcf85263a import PCF85263A
 
 def test_alarms():
     print("Initializing I2C...")
@@ -13,7 +13,7 @@ def test_alarms():
     except Exception as e:
         raise RuntimeError(f"Failed to init I2C(0): {e}")
 
-    rtc = PCF85263(i2c)
+    rtc = PCF85263A(i2c)
     
     # Preemptively disable alarms and clear flags
     rtc.disable_alarm1()
@@ -89,7 +89,7 @@ def test_alarms_interrupts():
         print(f"Skipping interrupt tests: hardware setup not fully available ({e})")
         return
 
-    rtc = PCF85263(i2c)
+    rtc = PCF85263A(i2c)
     
     # Preemptively disable alarms and clear flags
     rtc.disable_alarm1()

@@ -1,5 +1,5 @@
 """
-Example script to test the PCF85263 RTC using MicroPython and mpremote.
+Example script to test the PCF85263A RTC using MicroPython and mpremote.
 
 Initial author: Sebastian Romero (s.romero@arduino.cc)
 Copyright (C) Arduino s.r.l. and/or its affiliated companies
@@ -10,10 +10,10 @@ import time
 
 try:
     # Try importing from src if running locally
-    from pcf85263 import PCF85263
+    from pcf85263a import PCF85263A
 except ImportError:
     # If installed via mip, it will be in the system path
-    from pcf85263 import PCF85263
+    from pcf85263a import PCF85263A
 
 def test_availability(i2c):
     print("Scanning I2C bus...")
@@ -130,10 +130,10 @@ def run_tests():
     test_availability(i2c)
 
     try:
-        rtc = PCF85263(i2c)
-        print("PCF85263 initialized successfully.")
+        rtc = PCF85263A(i2c)
+        print("PCF85263A initialized successfully.")
     except Exception as e:
-        raise RuntimeError(f"Failed to initialize PCF85263: {e}")
+        raise RuntimeError(f"Failed to initialize PCF85263A: {e}")
 
     test_dt = (2024, 12, 31, 23, 59, 50, 2, 0)
     test_set_and_get_datetime(rtc, test_dt)

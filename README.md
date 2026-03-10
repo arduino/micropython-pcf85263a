@@ -1,6 +1,6 @@
-# 📦 PCF85263 MicroPython Driver
+# 📦 PCF85263A MicroPython Driver
 
-This package contains a MicroPython API to connect to the NXP PCF85263 Real-Time Clock (RTC) and manipulate its datetime settings over I2C. 
+This package contains a MicroPython API to connect to the NXP PCF85263A Real-Time Clock (RTC) and manipulate its datetime settings over I2C. 
 
 ## ✨ Features
 
@@ -13,14 +13,14 @@ To generate API documentation, `pydoc-markdown` can be run which parses the driv
 
 ## ✅ Supported Boards
 
-Any board that has I2C and can run a modern version of MicroPython is supported. You will have to specify the I2C interface to be used. e.g. `rtc = PCF85263(I2C(0))`. 
+Any board that has I2C and can run a modern version of MicroPython is supported. You will have to specify the I2C interface to be used. e.g. `rtc = PCF85263A(I2C(0))`. 
 
 ## ⚙️ Installation
 
 The easiest way is to use [mpremote and mip](https://docs.micropython.org/en/latest/reference/packages.html#packages): 
 
 ```bash
-mpremote mip install github:arduino/pcf85263at-micropython
+mpremote mip install github:arduino/pcf85263aat-micropython
 ```
 
 ## 🧑‍💻 Developer Installation
@@ -40,7 +40,7 @@ mpremote connect /dev/ttyACM0 mount src run ./examples/basic_usage.py
 
 ## 🐛 Reporting Issues
 
-If you encounter any issue, please open a bug report [here](https://github.com/arduino/pcf85263at-micropython/issues). 
+If you encounter any issue, please open a bug report [here](https://github.com/arduino/pcf85263aat-micropython/issues). 
 
 ## 💪 Contributing
 

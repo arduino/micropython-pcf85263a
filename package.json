@@ -1,8 +1,8 @@
 {
   "urls": [
     [
-      "github:arduino/micropython-pcf85263at/src/pcf85263.py",
-      "pcf85263.py"
+      "github:arduino/micropython-pcf85263aat/src/pcf85263a.py",
+      "pcf85263a.py"
     ]
   ],
   "version": "0.1.0"
