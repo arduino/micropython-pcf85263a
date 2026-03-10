@@ -82,30 +82,37 @@ class PCF85263A:
         self._set_rtc_mode()
 
     def _write_byte(self, reg, val):
+        """Writes a single byte to the specified register."""
         self._bytebuf[0] = val
         self.i2c.writeto_mem(self.address, reg, self._bytebuf)
 
     def _read_byte(self, reg):
+        """Reads a single byte from the specified register."""
         self.i2c.readfrom_mem_into(self.address, reg, self._bytebuf)
         return self._bytebuf[0]
         
     def _read_registers(self, reg, count):
+        """Reads multiple bytes starting from the specified register."""
         assert count <= len(self._buffer), "Read count exceeds buffer size"
         view = memoryview(self._buffer)[0:count]
         self.i2c.readfrom_mem_into(self.address, reg, view)
         return view
         
     def _write_registers(self, reg, buffer):
+        """Writes multiple bytes starting from the specified register."""
         self.i2c.writeto_mem(self.address, reg, buffer)
         
     def _bcd2dec(self, bcd):
+        """Converts Binary Coded Decimal (BCD) to decimal."""
         return (((bcd & 0xF0) >> 4) * 10 + (bcd & 0x0F))
 
     def _dec2bcd(self, dec):
+        """Converts decimal to Binary Coded Decimal (BCD)."""
         tens, units = divmod(dec, 10)
         return (tens << 4) + units
         
     def _set_rtc_mode(self):
+        """Configures the RTC to run in Real-Time Clock mode."""
         # _PCF85263A_FUNCTION register
         # mode 0: RTC mode, mode 1: Stopwatch mode
         mask = self._read_byte(_PCF85263A_FUNCTION)
@@ -114,6 +121,7 @@ class PCF85263A:
         self._write_byte(_PCF85263A_FUNCTION, mask)
 
     def _set_stopwatch_mode(self):
+        """Configures the RTC to run in Stopwatch mode."""
         # _PCF85263A_FUNCTION register
         mask = self._read_byte(_PCF85263A_FUNCTION)
         mask |= _PCF85263A_FUNC_RTCM  # Set bit 4 (RTCM)
@@ -169,6 +177,7 @@ class PCF85263A:
         
     @datetime.setter
     def datetime(self, dt):
+        """Sets the current datetime of the RTC."""
         year, month, day, hours, minutes, seconds, weekday, yearday = dt
         
         # Validations
@@ -219,6 +228,7 @@ class PCF85263A:
 
     @stopwatch_time.setter
     def stopwatch_time(self, time_tuple):
+        """Sets the current stopwatch time."""
         hours, minutes, seconds, hundredths = time_tuple
         
         if not (0 <= hundredths <= 99): raise ValueError("Hundredths out of range [0-99]")
@@ -253,6 +263,7 @@ class PCF85263A:
 
     @stopwatch_mode.setter
     def stopwatch_mode(self, is_stopwatch):
+        """Sets the RTC mode to Real-Time Clock (False) or Stopwatch (True)."""
         if is_stopwatch:
             self.stop()
             self._set_stopwatch_mode()
@@ -327,6 +338,7 @@ class PCF85263A:
 
     @alarm1_inta_enabled.setter
     def alarm1_inta_enabled(self, enable):
+        """Enables or disables Alarm 1 INTA routing."""
         inta_en = self._read_byte(_PCF85263A_INTA_ENABLE)
         if enable:
             inta_en |= _PCF85263A_INT_A1
@@ -342,6 +354,7 @@ class PCF85263A:
 
     @alarm1_intb_enabled.setter
     def alarm1_intb_enabled(self, enable):
+        """Enables or disables Alarm 1 INTB routing."""
         intb_en = self._read_byte(_PCF85263A_INTB_ENABLE)
         if enable:
             intb_en |= _PCF85263A_INT_A1
@@ -474,6 +487,7 @@ class PCF85263A:
 
     @alarm2_inta_enabled.setter
     def alarm2_inta_enabled(self, enable):
+        """Enables or disables Alarm 2 INTA routing."""
         inta_en = self._read_byte(_PCF85263A_INTA_ENABLE)
         if enable:
             inta_en |= _PCF85263A_INT_A2
@@ -489,6 +503,7 @@ class PCF85263A:
 
     @alarm2_intb_enabled.setter
     def alarm2_intb_enabled(self, enable):
+        """Enables or disables Alarm 2 INTB routing."""
         intb_en = self._read_byte(_PCF85263A_INTB_ENABLE)
         if enable:
             intb_en |= _PCF85263A_INT_A2
