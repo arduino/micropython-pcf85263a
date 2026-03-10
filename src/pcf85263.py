@@ -96,9 +96,10 @@ class PCF85263:
         return self._bytebuf[0]
         
     def _read_registers(self, reg, count):
-        buffer = bytearray(count)
-        self.i2c.readfrom_mem_into(self.address, reg, buffer)
-        return buffer
+        assert count <= len(self._buffer), "Read count exceeds buffer size"
+        view = memoryview(self._buffer)[0:count]
+        self.i2c.readfrom_mem_into(self.address, reg, view)
+        return view
         
     def _write_registers(self, reg, buffer):
         self.i2c.writeto_mem(self.address, reg, buffer)
