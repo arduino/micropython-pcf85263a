@@ -5,15 +5,10 @@ Initial author: Sebastian Romero (s.romero@arduino.cc)
 Copyright (C) Arduino s.r.l. and/or its affiliated companies
 """
 
-from machine import I2C, Pin
+from machine import I2C
 import time
 
-try:
-    # Try importing from src if running locally
-    from pcf85263a import PCF85263A
-except ImportError:
-    # If installed via mip, it will be in the system path
-    from pcf85263a import PCF85263A
+from pcf85263a import PCF85263A
 
 def test_availability(i2c):
     print("Scanning I2C bus...")

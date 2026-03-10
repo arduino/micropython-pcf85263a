@@ -1,10 +1,7 @@
 import time
 from machine import I2C
 
-try:
-    from pcf85263a import PCF85263A
-except ImportError:
-    from pcf85263a import PCF85263A
+from pcf85263a import PCF85263A
 
 def elapsed_time_in_hundredths(t_tuple):
     h, m, s, hs = t_tuple
