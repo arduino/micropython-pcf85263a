@@ -46,4 +46,4 @@ rtc = PCF85263A(bus)
 
 rtc.datetime = localtime() # Set RTC to current time (UTC)
 t = rtc.datetime # Read back time from RTC
-print(f"RTC set to: {t[0]:04d}-{t[1]:02d}-{t[2]:02d} {t[4]:02d}:{t[5]:02d}:{t[6]:02d}")
+print(f"RTC set to: {t[0]:04d}-{t[1]:02d}-{t[2]:02d} {t[3]:02d}:{t[4]:02d}:{t[5]:02d}")
