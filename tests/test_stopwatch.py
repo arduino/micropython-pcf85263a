@@ -28,6 +28,7 @@ def test_stopwatch_mode():
     assert rtc.stopped, "Failed to stop when entering stopwatch mode"
 
     # Test reset function
+    rtc.start()
     print("Testing stopwatch reset...")
     rtc.stopwatch_reset()
     assert rtc.stopped, "Failed to stop when resetting stopwatch"
@@ -106,14 +107,18 @@ def test_stopwatch_alarms():
     a2_cfg = rtc.stopwatch_alarm2
     assert a2_cfg == (123, None), f"Stopwatch Alarm 2 wildcard mismatch: {a2_cfg}"
 
-    print("Testing if Alarm 1 triggers...")
     rtc.stopwatch_reset()
     rtc.set_stopwatch_alarm1(hour=0, minute=0, second=2)
+    rtc.set_stopwatch_alarm2(hour=0, minute=1)  # Should trigger at 0:0:0, but we want to test A1 first
     rtc.start()
     
+    print("Testing if Alarm 1 triggers...")
     time.sleep(2.5)
-    
     assert rtc.alarm1_triggered, "Alarm 1 didn't trigger in stopwatch mode!"
+    
+    print("Testing if Alarm 2 triggers...")
+    time.sleep(60)  # Wait for Alarm 2 to trigger
+    assert rtc.alarm2_triggered, "Alarm 2 didn't trigger in stopwatch mode!"
     rtc.stop()
 
     rtc.stopwatch_mode = False
