@@ -22,7 +22,7 @@ Any board that has I2C and can run a modern version of MicroPython is supported.
 The easiest way is to use the [Arduino MicroPython Package Installer](https://github.com/arduino/lab-micropython-package-installer/releases/latest). Otherwise you can use [mpremote and mip](https://docs.micropython.org/en/latest/reference/packages.html#packages): 
 
 ```bash
-mpremote mip install github:arduino/pcf85263aat-micropython
+mpremote mip install github:arduino/micropython-pcf85263a
 ```
 
 ## 🧑‍💻 Developer Installation
