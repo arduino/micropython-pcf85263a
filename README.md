@@ -1,11 +1,13 @@
 # 📦 PCF85263A MicroPython Driver
 
-This package contains a MicroPython API to connect to the NXP PCF85263A Real-Time Clock (RTC) and manipulate its datetime settings over I2C. 
+This package contains a MicroPython API to connect to the NXP PCF85263A Real-Time Clock (RTC). 
 
 ## ✨ Features
 
 - **Datetime Operations**: Easy-to-use datetime property for reading and setting: `(year, month, mday, hour, minute, second, weekday, yearday)`.
-- **Clock Control**: Provides simple `start()` and `stop()` methods to enable and disable the RTC clock.
+- **Stopwatch Mode**: Configurable mode to track elapsed time (up to 999,999 hours) with hundredths-of-a-second precision, plus reset capabilities.
+- **Alarms & Interrupts**: Comprehensive support for Alarm 1 and Alarm 2 (in both RTC and Stopwatch modes), with polling or dedicated hardware interrupt routing (`INTA`, `INTB`).
+- **Clock Control & Diagnostics**: Provides simple `start()`, `stop()`, and `software_reset()` methods, plus undervoltage/stop detection via `oscillator_stopped`.
 - **Easy I2C integration**: Standard MicroPython `machine.I2C` compatibility allowing it to be used on any microcontroller supporting I2C via MicroPython.
 
 ## 📖 Documentation
