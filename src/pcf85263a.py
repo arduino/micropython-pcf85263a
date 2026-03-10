@@ -25,6 +25,9 @@ _PCF85263A_FLAGS = const(0x2B)
 _PCF85263A_STOP_ENABLE = const(0x2E)
 _PCF85263A_RESETS = const(0x2F)
 
+# Reset commands
+_PCF85263A_CMD_CPR = const(0xA4)
+
 # Function register bits
 _PCF85263A_FUNC_100TH = const(0x80)
 _PCF85263A_FUNC_RTCM = const(0x10)
@@ -228,7 +231,10 @@ class PCF85263A:
 
     @stopwatch_time.setter
     def stopwatch_time(self, time_tuple):
-        """Sets the current stopwatch time."""
+        """
+        Sets the current stopwatch time.
+        Stops the stopwatch when setting the time.
+        """
         hours, minutes, seconds, hundredths = time_tuple
         
         if not (0 <= hundredths <= 99): raise ValueError("Hundredths out of range [0-99]")
@@ -263,11 +269,17 @@ class PCF85263A:
 
     @stopwatch_mode.setter
     def stopwatch_mode(self, is_stopwatch):
-        """Sets the RTC mode to Real-Time Clock (False) or Stopwatch (True)."""
+        """
+        Sets the RTC mode to Real-Time Clock (False) or Stopwatch (True).
+        When enabling stopwatch mode, the RTC is automatically stopped.
+        When disabling stopwatch mode, the RTC is automatically started.
+        """
         if is_stopwatch:
             self.stop()
             self._set_stopwatch_mode()
         else:
+            self.stop()
+            self._write_byte(_PCF85263A_RESETS, _PCF85263A_CMD_CPR) # Clear prescaler (CPR command), triggers swap from stopwatch time to RTC time
             self._set_rtc_mode()
             self.start()
 
