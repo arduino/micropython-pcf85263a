@@ -1,10 +1,6 @@
 import time
 from machine import I2C
-
-try:
-    from pcf85263a import PCF85263A
-except ImportError:
-    from pcf85263a import PCF85263A
+from pcf85263a import PCF85263A
 
 def test_alarms():
     print("Initializing I2C...")
@@ -14,7 +10,9 @@ def test_alarms():
         raise RuntimeError(f"Failed to init I2C(0): {e}")
 
     rtc = PCF85263A(i2c)
-    
+    assert rtc.stopwatch_mode is False, "RTC should start in normal mode, not stopwatch mode"    
+    # rtc.software_reset()
+
     # Preemptively disable alarms and clear flags
     rtc.disable_alarm1()
     rtc.disable_alarm2()
@@ -44,6 +42,8 @@ def test_alarms():
     # Ensure flags are low
     assert not rtc.alarm1_triggered, "Alarm 1 triggered prematurely!"
     assert not rtc.alarm2_triggered, "Alarm 2 triggered prematurely!"
+
+    assert rtc.stopped is False, "RTC should be in running state"
 
     print("Waiting 3 seconds for alarms to trigger...")
     time.sleep(3)
@@ -90,6 +90,8 @@ def test_alarms_interrupts():
         return
 
     rtc = PCF85263A(i2c)
+    assert rtc.stopwatch_mode is False, "RTC should start in normal mode, not stopwatch mode"
+    assert rtc.stopped is False, "RTC should be in running state"
     
     # Preemptively disable alarms and clear flags
     rtc.disable_alarm1()
@@ -136,4 +138,3 @@ def test_alarms_interrupts():
 if __name__ == "__main__":
     test_alarms()
     test_alarms_interrupts()
-
