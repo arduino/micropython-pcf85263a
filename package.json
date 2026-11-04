@@ -9,5 +9,5 @@
       "github:arduino/micropython-pcf85263a/src/pcf85263a/pcf85263a.py"
     ]
   ],
-  "version": "1.0.0"
+  "version": "1.1.0"
 }
