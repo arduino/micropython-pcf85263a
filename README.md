@@ -7,7 +7,8 @@ This package contains a MicroPython API to connect to the NXP PCF85263A Real-Tim
 - **Datetime Operations**: Easy-to-use datetime property for reading and setting: `(year, month, mday, hour, minute, second, weekday, yearday)`.
 - **Stopwatch Mode**: Configurable mode to track elapsed time (up to 999,999 hours) with hundredths-of-a-second precision, plus reset capabilities.
 - **Alarms & Interrupts**: Comprehensive support for Alarm 1 and Alarm 2 (in both RTC and Stopwatch modes), with polling or dedicated hardware interrupt routing (`INTA`, `INTB`).
-- **Clock Control & Diagnostics**: Provides simple `start()`, `stop()`, and `software_reset()` methods, plus undervoltage/stop detection via `oscillator_stopped`.
+- **Clock Control & Diagnostics**: Provides simple `start()`, `stop()`, `software_reset()` and `clear_prescaler()` methods, plus undervoltage/stop detection via `oscillator_stopped`.
+- **Frequency Calibration**: Compensates the deviation of the crystal via the offset register (`offset`, `offset_ppm_per_step`, `fast_offset_mode`) to keep the clock accurate over long periods.
 - **Easy I2C integration**: Standard MicroPython `machine.I2C` compatibility allowing it to be used on any microcontroller supporting I2C via MicroPython.
 
 ## 📖 Documentation

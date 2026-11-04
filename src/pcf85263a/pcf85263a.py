@@ -17,6 +17,8 @@ _PCF85263A_ALARM1_SECONDS = const(0x08)
 _PCF85263A_ALARM2_MINUTES = const(0x0D)
 _PCF85263A_ALARM_ENABLES = const(0x10)
 
+_PCF85263A_OFFSET = const(0x24)
+_PCF85263A_OSCILLATOR = const(0x25)
 _PCF85263A_PIN_IO = const(0x27)
 _PCF85263A_FUNCTION = const(0x28)
 _PCF85263A_INTA_ENABLE = const(0x29)
@@ -31,6 +33,13 @@ _PCF85263A_CMD_CPR = const(0xA4)
 # Function register bits
 _PCF85263A_FUNC_100TH = const(0x80)
 _PCF85263A_FUNC_RTCM = const(0x10)
+
+# Oscillator register bits
+_PCF85263A_OSC_OFFM = const(0x40)
+
+# Offset register steps in ppm, normal mode and fast mode
+_PCF85263A_OFFSET_PPM_NORMAL = 2.170
+_PCF85263A_OFFSET_PPM_FAST = 2.0345
 
 # Pin IO register bits
 _PCF85263A_PINIO_INTAPM_MASK = const(0x03)
@@ -148,10 +157,28 @@ class PCF85263A:
         """Performs a software reset of the RTC (Clears also prescaler and timestamp)."""
         self._write_byte(_PCF85263A_RESETS, 0x2C)
 
+    def clear_prescaler(self):
+        """Clears the prescaler so that the next full second starts immediately.
+
+        Needed to set the time accurately. Stop the clock first, then clear the
+        prescaler, then write the time and start the clock again. The time
+        circuits restart within 122 us of the clock being started.
+        """
+        self._write_byte(_PCF85263A_RESETS, _PCF85263A_CMD_CPR)
+
     @property
     def oscillator_stopped(self):
         """Returns True if the oscillator is stopped. If True, it might indicate an undervoltage issue."""
         return bool(self._read_byte(_PCF85263A_SECONDS) & 0x80)
+
+    @property
+    def seconds(self):
+        """Get the seconds of the current time.
+
+        Reads a single register, which is quicker than reading the whole datetime
+        and is useful for detecting the moment the clock ticks.
+        """
+        return self._bcd2dec(self._read_byte(_PCF85263A_SECONDS) & 0x7F)
 
     @property
     def datetime(self):
@@ -163,6 +190,8 @@ class PCF85263A:
         Year is 2000-2099.
         Weekday is 0-6 (0=Monday, 6=Sunday as per MicroPython standard).
         yearday is always 0 (not supported by RTC but required for tuple compatibility).
+        Setting the time clears the prescaler, so the new second starts right away
+        instead of carrying over the fraction of a second from the previous time.
         """
         # Read 7 registers starting from SECONDS (0x01)
         # Sequence: SECONDS, MINUTES, HOURS, DAYS, WEEKDAYS, MONTHS, YEARS
@@ -202,8 +231,55 @@ class PCF85263A:
         buffer[6] = self._dec2bcd(year - 2000) # Century needs to be removed
         
         self.stop()
+        self.clear_prescaler() # Required to set the time accurately
         self._write_registers(_PCF85263A_SECONDS, buffer)
         self.start()
+
+    @property
+    def fast_offset_mode(self):
+        """Get or set the offset correction mode.
+
+        In normal mode (the default) correction pulses are applied every 4 hours,
+        in fast mode every 8 minutes at the cost of a higher current consumption.
+        """
+        return bool(self._read_byte(_PCF85263A_OSCILLATOR) & _PCF85263A_OSC_OFFM)
+
+    @fast_offset_mode.setter
+    def fast_offset_mode(self, enable):
+        """Sets the offset correction mode."""
+        register = self._read_byte(_PCF85263A_OSCILLATOR)
+        if enable:
+            register |= _PCF85263A_OSC_OFFM
+        else:
+            register &= ~_PCF85263A_OSC_OFFM
+        self._write_byte(_PCF85263A_OSCILLATOR, register)
+
+    @property
+    def offset_ppm_per_step(self):
+        """The frequency deviation that one step of the offset register corrects."""
+        if self.fast_offset_mode:
+            return _PCF85263A_OFFSET_PPM_FAST
+        return _PCF85263A_OFFSET_PPM_NORMAL
+
+    @property
+    def offset(self):
+        """Get or set the offset register.
+
+        Expects a value from -128 to 127 in two's complement. Positive values slow
+        the clock down, negative values speed it up. Multiply by
+        offset_ppm_per_step to get the deviation that the value corrects for.
+
+        The correction adds or removes clock correction pulses, which changes the
+        length of a single second rather than the oscillator frequency.
+        """
+        value = self._read_byte(_PCF85263A_OFFSET)
+        return value - 256 if value > 127 else value
+
+    @offset.setter
+    def offset(self, value):
+        """Sets the offset register."""
+        if not (-128 <= value <= 127): raise ValueError("Offset out of range [-128 to 127]")
+        self._write_byte(_PCF85263A_OFFSET, value & 0xFF)
 
     @property
     def stopwatch_time(self):
@@ -233,7 +309,8 @@ class PCF85263A:
     def stopwatch_time(self, time_tuple):
         """
         Sets the current stopwatch time.
-        Stops the stopwatch when setting the time.
+        Stops the stopwatch when setting the time and clears the prescaler, so that
+        counting resumes from a full hundredth of a second.
         """
         hours, minutes, seconds, hundredths = time_tuple
         
@@ -255,6 +332,7 @@ class PCF85263A:
         buffer[5] = self._dec2bcd(hours_H)
         
         self.stop()
+        self.clear_prescaler() # Required to set the time accurately
         self._write_registers(_PCF85263A_SECONDS_100TH, buffer)
 
     def stopwatch_reset(self):
@@ -279,7 +357,7 @@ class PCF85263A:
             self._set_stopwatch_mode()
         else:
             self.stop()
-            self._write_byte(_PCF85263A_RESETS, _PCF85263A_CMD_CPR) # Clear prescaler (CPR command), triggers swap from stopwatch time to RTC time
+            self.clear_prescaler() # Triggers the swap from stopwatch time to RTC time
             self._set_rtc_mode()
             self.start()
 
