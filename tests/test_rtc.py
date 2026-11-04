@@ -113,6 +113,56 @@ def test_mktime_localtime(rtc, test_dt):
         raise RuntimeError(f"Time conversion test failed with error: {e}")
     
 
+def test_seconds(rtc):
+    print("Testing the single register seconds read...")
+    # Read the seconds on both sides of the datetime in case the clock ticks in between
+    before = rtc.seconds
+    full_dt = rtc.datetime
+    after = rtc.seconds
+
+    if full_dt[5] not in (before, after):
+        raise RuntimeError(f"Seconds mismatch! datetime: {full_dt[5]}, seconds: {before}/{after}")
+    print("Seconds check passed!")
+
+
+def test_offset(rtc):
+    print("Testing the offset calibration...")
+    original_offset = rtc.offset
+    original_fast_mode = rtc.fast_offset_mode
+    print(f"Current offset: {original_offset} ({original_offset * rtc.offset_ppm_per_step:+.3f} ppm)")
+
+    try:
+        for value in (-128, -1, 0, 1, 127):
+            rtc.offset = value
+            read_back = rtc.offset
+            if read_back != value:
+                raise RuntimeError(f"Offset mismatch! Expected: {value}, Got: {read_back}")
+
+        try:
+            rtc.offset = 128
+            raise RuntimeError("An offset of 128 should have been rejected.")
+        except ValueError:
+            pass
+
+        rtc.fast_offset_mode = True
+        if not rtc.fast_offset_mode:
+            raise RuntimeError("Fast offset mode could not be enabled.")
+        if rtc.offset_ppm_per_step != 2.0345:
+            raise RuntimeError(f"Unexpected step size in fast mode: {rtc.offset_ppm_per_step}")
+
+        rtc.fast_offset_mode = False
+        if rtc.fast_offset_mode:
+            raise RuntimeError("Fast offset mode could not be disabled.")
+        if rtc.offset_ppm_per_step != 2.170:
+            raise RuntimeError(f"Unexpected step size in normal mode: {rtc.offset_ppm_per_step}")
+
+        print("Offset calibration check passed!")
+    finally:
+        # Leave the calibration of the device the way it was found
+        rtc.offset = original_offset
+        rtc.fast_offset_mode = original_fast_mode
+
+
 def run_tests():
     # Adjust I2C pins based on your specific board if necessary.
     # Defaulting to typically used hardware I2C on many boards, or specific pins:
@@ -135,6 +185,8 @@ def run_tests():
     test_ticking(rtc, test_dt)
     test_rollover(rtc, test_dt)
     test_mktime_localtime(rtc, test_dt)
+    test_seconds(rtc)
+    test_offset(rtc)
         
     print("✅ Tests completed successfully!")
 
